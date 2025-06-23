@@ -305,10 +305,15 @@
       margin-top: 3px;
       display: block;
     }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
 <body>
+
   <div id="loadingSpinner" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#ffffffd9; display:flex; align-items:center; justify-content:center; z-index:9999;">
     <div style="text-align:center;">
       <div style="border: 5px solid #f3f3f3; border-top: 5px solid #28a745; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
@@ -316,15 +321,9 @@
     </div>
   </div>
   
-  <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+  
 
-
-
+  
   <div class="checkout-box" class="fade-in">
 
     <div class="container">
@@ -630,17 +629,6 @@
       this.value = this.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
     });
 
-    function validateForm() {
-  let isValid = true;
-  // ... (كل الفاليديشن زي ما هو)
-
-  // ده لازم يكون في الآخر
-  if (isValid) {
-    return confirm("Are you sure you want to place the order?");
-  }
-
-  return false;
-}
 
 
   </script>
@@ -649,43 +637,45 @@
 document.getElementById("orderForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
-  // تأكيد صحة البيانات
   if (!validateForm()) return;
 
   const formData = new FormData(this);
   const data = {};
   formData.forEach((value, key) => (data[key] = value));
 
-  // Spinner يظهر برسالة الإرسال
-  document.querySelector("#loadingSpinner p").textContent = "Sending your order...";
+  // ✅ أظهر السبينر
   document.getElementById("loadingSpinner").style.display = "flex";
 
-  const response = await fetch("http://localhost:3000/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+  try {
+    const response = await fetch("http://localhost:3000/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-  if (response.ok) {
-    window.location.href = "thankyou-index.html";
-  } else {
-    alert("❌ Failed to send order.");
+    if (response.ok) {
+      window.location.href = "thankyou-index.html";
+    } else {
+      alert("❌ Failed to send order.");
+      document.getElementById("loadingSpinner").style.display = "none";
+    }
+  } catch (error) {
+    console.error("❌ Error:", error);
+    alert("❌ Something went wrong.");
     document.getElementById("loadingSpinner").style.display = "none";
   }
 });
 
 
-
-
-  
 </script>
-
 <script>
-  // أول ما الصفحة تخلص تحميل
+  // لما الصفحة تخلص تحميل، اخفي السبينر
   window.addEventListener("load", function () {
     document.getElementById("loadingSpinner").style.display = "none";
   });
 </script>
+
+
 
 </body>
 
