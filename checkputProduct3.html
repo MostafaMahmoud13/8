@@ -305,25 +305,40 @@
       margin-top: 3px;
       display: block;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .submit-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      color: #777;
     }
   </style>
 </head>
 
 <body>
 
-  <div id="loadingSpinner" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#ffffffd9; display:flex; align-items:center; justify-content:center; z-index:9999;">
+  <div id="loadingSpinner"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#ffffffd9; display:flex; align-items:center; justify-content:center; z-index:9999;">
     <div style="text-align:center;">
-      <div style="border: 5px solid #f3f3f3; border-top: 5px solid #28a745; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+      <div
+        style="border: 5px solid #f3f3f3; border-top: 5px solid #28a745; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;">
+      </div>
       <p style="margin-top: 10px; font-size: 18px;">Sending your order...</p>
     </div>
   </div>
-  
-  
 
-  
+
+
+
   <div class="checkout-box" class="fade-in">
 
     <div class="container">
@@ -341,7 +356,7 @@
   <form id="orderForm">
 
 
-    
+
     <input type="hidden" name="Order_Summary" id="orderSummary">
     <input type="hidden" name="_captcha" value="false">
 
@@ -375,8 +390,16 @@
       <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
       <option value="UAE">🇦🇪 UAE</option>
       <option value="Italy">🇮🇹 Italy</option>
+      
     </select><br><br>
-
+    <label>Country</label>
+    <select name="country" required>
+      <option value="Czech">🇨🇿 Czech Republic</option>
+      <option value="Slovakia">🇸🇰 Slovakia</option>
+      <option value="Hungary">🇭🇺 Hungary</option>
+      <option value="Romania">🇷🇴 Romania</option>
+    </select>
+    
 
 
 
@@ -472,7 +495,8 @@
       <input type="hidden" name="paymentMethod" id="paymentMethod" value="card">
       <span id="error-name" class="error-msg"></span>
 
-      <button type="submit" class="submit-btn" id="submitBtn">Pay Now</button>
+      <button type="submit" class="submit-btn" id="submitBtn" disabled>Pay Now</button>
+
 
     </div>
     <!-- Payment Section End -->
@@ -484,8 +508,8 @@
 
   </form>
 
- 
-  
+
+
   <script>
     const methodOptions = document.querySelectorAll(".payment-option");
     const paymentInput = document.getElementById("paymentMethod");
@@ -629,52 +653,99 @@
       this.value = this.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
     });
 
+    // server.js
+    const express = require('express');
+    const cors = require('cors');
+    const bodyParser = require('body-parser');
+
+    const app = express();
+    const PORT = 3000;
+
+    app.use(cors());
+    app.use(bodyParser.json());
+
+    app.post('/submit', (req, res) => {
+      console.log("Received order:", req.body);
+      res.status(200).send("Order received");
+    });
+
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
 
 
   </script>
 
-<script>
-document.getElementById("orderForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
+  <script>
+    document.getElementById("orderForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
 
-  if (!validateForm()) return;
+      if (!validateForm()) return;
 
-  const formData = new FormData(this);
-  const data = {};
-  formData.forEach((value, key) => (data[key] = value));
+      const formData = new FormData(this);
+      const data = {};
+      formData.forEach((value, key) => (data[key] = value));
 
-  // ✅ أظهر السبينر
-  document.getElementById("loadingSpinner").style.display = "flex";
+      // ✅ أظهر السبينر
+      document.getElementById("loadingSpinner").style.display = "flex";
 
-  try {
-    const response = await fetch("http://localhost:3000/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      try {
+        const response = await fetch("http://localhost:3000/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const resText = await response.text();
+
+        console.log("Server said:", resText);
+
+
+        if (response.ok) {
+          window.location.href = "thankyou-index.html";
+        } else {
+          alert("❌ Failed to send order.");
+          document.getElementById("loadingSpinner").style.display = "none";
+        }
+      } catch (error) {
+        console.error("❌ Error:", error);
+        alert("❌ Something went wrong.");
+        document.getElementById("loadingSpinner").style.display = "none";
+      }
     });
 
-    if (response.ok) {
-      window.location.href = "thankyou-index.html";
-    } else {
-      alert("❌ Failed to send order.");
+
+  </script>
+  <script>
+    // لما الصفحة تخلص تحميل، اخفي السبينر
+    window.addEventListener("load", function () {
       document.getElementById("loadingSpinner").style.display = "none";
+    });
+  </script>
+
+  <script>
+    const submitBtn = document.getElementById("submitBtn");
+    const orderForm = document.getElementById("orderForm");
+    const paymentMethodInput = document.getElementById("paymentMethod");
+
+    // تابع كل أنواع الإدخال والتغيير على الفورم ووسيلة الدفع
+    orderForm.addEventListener("input", checkFormValidity);
+    paymentMethodInput.addEventListener("change", checkFormValidity);
+
+    function checkFormValidity() {
+      // لو البيانات كلها صح، فعّل الزر
+      if (validateForm()) {
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.disabled = true;
+      }
     }
-  } catch (error) {
-    console.error("❌ Error:", error);
-    alert("❌ Something went wrong.");
-    document.getElementById("loadingSpinner").style.display = "none";
-  }
-});
 
-
-</script>
-<script>
-  // لما الصفحة تخلص تحميل، اخفي السبينر
-  window.addEventListener("load", function () {
-    document.getElementById("loadingSpinner").style.display = "none";
-  });
-</script>
-
+    // أول تحميل للصفحة، خليه مقفول
+    window.addEventListener("load", function () {
+      document.getElementById("loadingSpinner").style.display = "none";
+      submitBtn.disabled = true; // تأكيد
+    });
+  </script>
 
 
 </body>
